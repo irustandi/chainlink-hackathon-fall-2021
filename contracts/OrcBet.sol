@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -11,11 +11,13 @@ import "@chainlink/contracts/src/v0.8/Denominations.sol";
 
 contract OrcBetManager is KeeperCompatibleInterface, Ownable {
     OrcBetPool[] public allPools;
-    FeedRegistryInterface internal registry;
+    FeedRegistryInterface internal feedRegistry;
     LinkTokenInterface internal linkToken;
     address internal keeperRegistry;
     uint public keeperId;
     bool public initialized;
+    uint public feeBps;
+    uint public minBet;
     mapping (address => mapping (address => mapping (int => mapping (uint => address)))) public getPool;
 
     event BetPoolCreated(
@@ -32,15 +34,21 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
     }
 
     function initialize(
-        address _registry,
+        address _feedRegistry,
         address _keeperRegistry,
         uint _keeperId,
-        address _linkToken
+        address _linkToken,
+        uint _feeBps,
+        uint _minBet
     ) external onlyOwner {
-        registry = FeedRegistryInterface(_registry);
+        require(_feeBps <= 500, "fee cannot be more than five percent");
+        require(_minBet > 1000000000, "minimum bet has to be larger than 1 gwei LINK");
+        feedRegistry = FeedRegistryInterface(_feedRegistry);
         keeperRegistry = _keeperRegistry;
         keeperId = _keeperId;
         linkToken = LinkTokenInterface(_linkToken);
+        feeBps = _feeBps;
+        minBet = _minBet;
         initialized = true;
     }
 
@@ -58,7 +66,7 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
         // check existing bet for base, quote, threshold, timestamp
 
         // check availability of feed
-        AggregatorV3Interface feed = registry.getFeed(_base, _quote);
+        AggregatorV3Interface feed = feedRegistry.getFeed(_base, _quote);
 
         OrcBetPool pool = new OrcBetPool();
         pool.initialize(
@@ -66,7 +74,9 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
             _quote,
             _threshold,
             _timestamp,
-            address(linkToken)
+            address(linkToken),
+            feeBps,
+            minBet
         );
 
         getPool[_base][_quote][_threshold][_timestamp] = address(pool);
@@ -79,6 +89,18 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
             address(pool),
             allPools.length
         );
+    }
+
+    function setFee(
+        uint _feeBps
+    ) external onlyOwner {
+        feeBps = _feeBps;
+    }
+
+    function setMinBet(
+        uint _minBet
+    ) external onlyOwner {
+        minBet = _minBet;
     }
 
     function checkUpkeep(
@@ -113,7 +135,6 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
         }
     }
 
-    // TODO: cleanup non-active pool
     function performUpkeep(
         bytes calldata performData
     ) external override {
@@ -136,7 +157,7 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
         uint numPools = canFinishPools.length;
 
         for (idx = 0; idx < numPools; idx++) {
-            canFinishPools[idx].finish(registry);
+            canFinishPools[idx].finish(feedRegistry);
         }
     }
 }
@@ -185,15 +206,19 @@ contract OrcBetPool is Ownable {
         address _quote,
         int _threshold,
         uint _endTimestamp,
-        address _betToken
+        address _betToken,
+        uint _feeBps,
+        uint _minBet
     ) external onlyOwner {
-        // check the inputs
+        // should we check the inputs here? right now handled by manager
         base = _base;
         quote = _quote;
         threshold = _threshold;
         endTimestamp = _endTimestamp;
         betToken = _betToken;
         createdTimestamp = block.timestamp;
+        feeBps = _feeBps;
+        minBet = _minBet;
     }
 
     function _calculateFeeAndEffectiveBet(
@@ -227,7 +252,7 @@ contract OrcBetPool is Ownable {
     }
 
     function _getFinalAnswer(
-        FeedRegistryInterface _registry,
+        FeedRegistryInterface _feedRegistry,
         address _base,
         address _quote,
         uint80 _latestRoundId,
@@ -246,7 +271,7 @@ contract OrcBetPool is Ownable {
         finalAnswer = _latestAnswer;
 
         while (timestamp >= _refTimestamp) {
-            roundId = _registry.getPreviousRoundId(_base, _quote, roundId);
+            roundId = _feedRegistry.getPreviousRoundId(_base, _quote, roundId);
             int answer;
             uint startedAt;
             uint80 answeredInRound;
@@ -258,7 +283,7 @@ contract OrcBetPool is Ownable {
                     startedAt,
                     timestamp,
                     answeredInRound
-                ) = _registry.getRoundData(_base, _quote, roundId);
+                ) = _feedRegistry.getRoundData(_base, _quote, roundId);
             }
 
             if (timestamp >= _refTimestamp) {
@@ -354,7 +379,7 @@ contract OrcBetPool is Ownable {
     }
 
     function finish(
-        FeedRegistryInterface registry
+        FeedRegistryInterface feedRegistry
     ) external {
         require(isActive);
 
@@ -364,7 +389,7 @@ contract OrcBetPool is Ownable {
             uint startedAt,
             uint timestamp,
             uint80 answeredInRound
-        ) = registry.latestRoundData(base, quote);
+        ) = feedRegistry.latestRoundData(base, quote);
 
         if (timestamp >= endTimestamp) {
             (
@@ -372,7 +397,7 @@ contract OrcBetPool is Ownable {
                 uint finalTimestamp,
                 int finalAnswer
             ) = _getFinalAnswer(
-                registry,
+                feedRegistry,
                 base,
                 quote,
                 roundId,
