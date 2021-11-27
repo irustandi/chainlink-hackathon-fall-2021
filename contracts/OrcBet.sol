@@ -27,24 +27,25 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
         uint
     );
 
-    constructor() {
+    constructor(
+        address _linkToken,
+        uint _feeBps,
+        uint _minBet
+    ) {
+        require(_feeBps <= 500, "fee cannot be more than five percent");
+        require(_minBet > 1000000000, "minimum bet has to be larger than 1 gwei LINK");
+        linkToken = LinkTokenInterface(_linkToken);
+        feeBps = _feeBps;
+        minBet = _minBet;
         initialized = false;
     }
 
     function initialize(
         address _keeperRegistry,
-        uint _keeperId,
-        address _linkToken,
-        uint _feeBps,
-        uint _minBet
+        uint _keeperId
     ) external onlyOwner {
-        require(_feeBps <= 500, "fee cannot be more than five percent");
-        require(_minBet > 1000000000, "minimum bet has to be larger than 1 gwei LINK");
         keeperRegistry = _keeperRegistry;
         keeperId = _keeperId;
-        linkToken = LinkTokenInterface(_linkToken);
-        feeBps = _feeBps;
-        minBet = _minBet;
         initialized = true;
     }
 
