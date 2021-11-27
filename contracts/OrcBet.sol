@@ -50,7 +50,9 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
         int _threshold,
         uint _timestamp
     ) external {
-        require(initialized);
+        require(initialized, "manager is not initialized yet");
+        require(_base != address(0), "cannot use zero address for base");
+        require(_quote != address(0), "cannot use zero address for quote");
         require(_timestamp > block.timestamp, "timestamp has to be in the future");
         require(getPool[_base][_quote][_threshold][_timestamp] == address(0), "pool already exists");
         // check existing bet for base, quote, threshold, timestamp
