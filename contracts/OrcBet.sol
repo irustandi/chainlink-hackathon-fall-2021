@@ -105,6 +105,20 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
         minBet = _minBet;
     }
 
+    function addFundsToKeeper(
+        uint amount
+    ) external onlyOwner {
+        require(
+            linkToken.balanceOf(address(this)) >= amount, 
+            "amount to send is greater than balance"
+        );
+        linkToken.transferAndCall(
+            keeperRegistry, 
+            amount,
+            abi.encode(keeperId)
+        );
+    }
+
     function checkUpkeep(
         bytes calldata checkData
     ) external override returns (
@@ -142,15 +156,6 @@ contract OrcBetManager is KeeperCompatibleInterface, Ownable {
     ) external override {
         if (!initialized) {
             return;
-        }
-
-        // send LINK balance to keeper
-        if (linkToken.balanceOf(address(this)) > 0) {
-            linkToken.transferAndCall(
-                keeperRegistry, 
-                linkToken.balanceOf(address(this)),
-                abi.encode(keeperId)
-            );
         }
 
         OrcBetPool[] memory canFinishPools = abi.decode(performData, (OrcBetPool[]));
