@@ -52,6 +52,20 @@ contract OrcBetPool is IOrcBetPool, Ownable {
         return betAmountBelow;
     }
 
+    function getBetAmountAboveForAddress(address addr) view external returns (uint256) {
+        BetInfo storage betInfo = betInfoMap[addr];
+        return betInfo.betAmountAbove;
+    }
+
+    function getBetAmountBelowForAddress(address addr) view external returns (uint256) {
+        BetInfo storage betInfo = betInfoMap[addr];
+        return betInfo.betAmountBelow;
+    }
+
+    function active() view external override returns (bool) {
+        return isActive;
+    }
+
     function initialize(
         AggregatorV3Interface _feed,
         int _threshold,

@@ -68,3 +68,23 @@ def fee_bps():
 @pytest.fixture
 def keeper_id():
     return 1
+
+
+@pytest.fixture
+def pool_duration():
+    return 3600
+
+
+@pytest.fixture
+def pool_threshold():
+    return 4000000000000000000000
+
+
+@pytest.fixture
+def round_id():
+    return 1
+
+
+@pytest.fixture
+def pool_value_delta():
+    return 100000000000000000000
