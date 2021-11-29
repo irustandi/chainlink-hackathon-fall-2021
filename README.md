@@ -6,7 +6,7 @@ For this hackathon, we develop an EVM-based decentralized betting pool platform 
 
 ## Betting Pool
 
-Each betting pool is based on a prediction of a value (e.g. price of ETH/USD) made available by a particular Chainlink data feed. Anybody can create a betting pool, and anybody can make a bet about whether the value will be above or below some reference value after a given time.
+Each betting pool is based on a prediction of a value (e.g. price of ETH/USD) made available by a particular [Chainlink data feed](https://docs.chain.link/docs/using-chainlink-reference-contracts/). Anybody can create a betting pool, and anybody can make a bet about whether the value will be above or below some reference value after a given time.
 
 To create a pool, these parameters are needed:
 
@@ -27,11 +27,11 @@ As implemented, the pool supports any ERC20 token for the bet. But the pool mana
 
 ## Pool Manager
 
-The pool manager manages created pools and utilizes the Chainlink keeper to evaluate which pools are ready to close. To do this, the pool manager implements the KeeperCompatibleInterface. The deployer of the pool manager needs to make sure the pool manager is register with the keeper registry and sufficiently funded with LINK tokens. To help with security, the pool manager also manages the supported feed and tokens available for betting.
+The pool manager manages created pools and utilizes the [Chainlink keeper](https://docs.chain.link/docs/chainlink-keepers/introduction/) to evaluate which pools are ready to close. To do this, the pool manager implements the [KeeperCompatibleInterface](https://docs.chain.link/docs/chainlink-keepers/compatible-contracts/). The deployer of the pool manager needs to make sure the pool manager is register with the keeper registry and sufficiently funded with LINK tokens. To help with security, the pool manager also manages the supported feed and tokens available for betting.
 
 ## Development
 
-Solidity is used to implement the smart contracts. brownie is used as a development and testing framework, using the brownie starter kit provided by Chainlink as a starting point.
+Solidity is used to implement the smart contracts. [brownie](https://eth-brownie.readthedocs.io/en/stable/) is used as a development and testing framework, using the [brownie starter kit](https://github.com/smartcontractkit/chainlink-mix) provided by Chainlink as a starting point.
 
 ## Deployment
 
