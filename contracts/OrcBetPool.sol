@@ -6,6 +6,9 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IOrcBetPool.sol";
 
+/**
+ *  @title Betting pool
+ */
 contract OrcBetPool is IOrcBetPool, Ownable {
     struct BetInfo {
         uint betAmountAbove;
@@ -44,28 +47,59 @@ contract OrcBetPool is IOrcBetPool, Ownable {
         isActive = false;
     }
 
+    /**
+     *  @notice Get the total amount of above bet
+     *  @return betAmountAbove the total amount of above bet
+     */
     function getBetAmountAbove() view external override returns (uint256) {
         return betAmountAbove;
     }
 
+    /**
+     *  @notice Get the total amount of below bet
+     *  @return betAmountAbove the total amount of below bet
+     */
     function getBetAmountBelow() view external override returns (uint256) {
         return betAmountBelow;
     }
 
+    /**
+     *  @notice Get the amount of above bet for a specific address
+     *  @param addr the address of interest
+     *  @return betAmountAbove the amount of above bet for address
+     */
     function getBetAmountAboveForAddress(address addr) view external returns (uint256) {
         BetInfo storage betInfo = betInfoMap[addr];
         return betInfo.betAmountAbove;
     }
 
+    /**
+     *  @notice Get the amount of below bet for a specific address
+     *  @param addr the address of interest
+     *  @return betAmountAbove the amount of below bet for address
+     */
     function getBetAmountBelowForAddress(address addr) view external returns (uint256) {
         BetInfo storage betInfo = betInfoMap[addr];
         return betInfo.betAmountBelow;
     }
 
+    /**
+     *  @notice Is the pool active?
+     *  @return isActive whether the pool is active
+     */
     function active() view external override returns (bool) {
         return isActive;
     }
 
+    /**
+     *  @notice Initialize the betting pool and make it active
+     *  @param _feed the Chainlink feed to check
+     *  @param _threshold the threshold (reference value) for the pool
+     *  @param _endTimestamp the timestamp to evaluate the bets and close the pool
+     *  @param _betToken the address of the ERC20 token for the bets
+     *  @param _feeBps the fee in basis points
+     *  @param _minBet the minimum amount for each bet submission
+     */
     function initialize(
         AggregatorV3Interface _feed,
         int _threshold,
@@ -161,6 +195,11 @@ contract OrcBetPool is IOrcBetPool, Ownable {
         }
     }
 
+    /**
+     *  @notice add bet to the pool
+     *  @param _betAmountAbove the amount of above bet to add
+     *  @param _betAmountBelow the amount of below bet to add
+     */
     function addBet(
         uint256 _betAmountAbove,
         uint256 _betAmountBelow
@@ -195,10 +234,17 @@ contract OrcBetPool is IOrcBetPool, Ownable {
         emit Bet(msg.sender, effectiveBetAbove, feeAbove, effectiveBetBelow, feeBelow);
     }
 
+    /**
+     *  @notice view function to check whether the pool can be closed
+     *  @return canFinish whether the pool can be closed
+     */
     function canFinish() view external override returns (bool) {
         return isActive && block.timestamp >= endTimestamp;
     }
 
+    /**
+     *  @notice close (finish) the pool, paying off the winning bettors
+     */
     function finish() external override {
         require(isActive, "not active");
 
