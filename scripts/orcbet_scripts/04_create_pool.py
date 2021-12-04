@@ -5,15 +5,10 @@ from scripts.helpful_scripts import (
 )
 
 
-def create_orcbetpool():
+def create_pool():
     orcbet_mgr = OrcBetManager[-1]
-
-    orcbet_mgr.addFeed(
-        get_contract("eth_usd_price_feed").address,
-        {"from": account}
-    )
-
     account = get_account()
+
     time = chain.time()
 
     orcbet_mgr.createBetPool(
@@ -24,8 +19,3 @@ def create_orcbetpool():
     )
 
     print(orcbet_mgr.allPools(0))
-
-
-
-def main():
-    create_orcbetpool()

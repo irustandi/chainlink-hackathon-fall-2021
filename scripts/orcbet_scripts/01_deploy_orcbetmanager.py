@@ -17,16 +17,8 @@ def deploy_orcbetmanager():
         publish_source=config["networks"][network.show_active()].get("verify", False),
     )
 
-    orcbet_mgr.initialize(
-        get_contract("keeper_registry").address,
-        1,
-        {"from": account},
-    )
-
     print(f"Manager feeBps: {orcbet_mgr.feeBps()}")
     print(f"Manager minBet: {orcbet_mgr.minBet()}")
-    print(f"Manager keeperId: {orcbet_mgr.keeperId()}")
-    print(f"Manager initialized: {orcbet_mgr.initialized()}")
 
     return orcbet_mgr
 
